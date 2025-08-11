@@ -9,6 +9,7 @@ using Tkinter. The AI agent uses the same Minimax algorithm.
 import tkinter as tk
 from tkinter import messagebox, ttk
 import threading
+import time
 from tic_tac_toe_agent import TicTacToeGame, MinimaxAI
 
 
@@ -42,9 +43,6 @@ class TicTacToeGUI:
     
     def setup_gui(self):
         """Set up the GUI components with neon-style design."""
-        # Configure root window with dark theme
-        self.root.configure(bg='#0a0a0a')
-        
         # Title with neon effect
         title_label = tk.Label(
             self.root, 
@@ -93,30 +91,25 @@ class TicTacToeGUI:
         # Create 3x3 grid of buttons with neon style
         self.buttons = []
         for i in range(3):
-            button_row = []
+            row = []
             for j in range(3):
-                btn = tk.Button(
+                button = tk.Button(
                     board_frame,
-                    text="",
-                    font=("Arial", 24, "bold"),
-                    width=4,
-                    height=2,
+                    text=" ",
+                    font=("Arial", 36, "bold"),
+                    width=3,
+                    height=1,
+                    command=lambda r=i, c=j: self.on_cell_click(r, c),
                     bg="#1a1a2e",
                     fg="#ffffff",
                     activebackground="#16213e",
                     activeforeground="#ffffff",
-                    relief="raised",
-                    bd=2,
-                    command=lambda r=i, c=j: self.on_cell_click(r, c)
+                    relief="flat",
+                    borderwidth=2
                 )
-                btn.grid(row=i, column=j, padx=2, pady=2)
-                
-                # Add hover effects
-                btn.bind("<Enter>", lambda e, b=btn: b.configure(bg="#0e4b99"))
-                btn.bind("<Leave>", lambda e, b=btn: b.configure(bg="#1a1a2e"))
-                
-                button_row.append(btn)
-            self.buttons.append(button_row)
+                button.grid(row=i, column=j, padx=3, pady=3)
+                row.append(button)
+            self.buttons.append(row)
         
         # Control buttons frame with dark theme
         control_frame = tk.Frame(self.root, bg="#0a0a0a")
@@ -127,34 +120,34 @@ class TicTacToeGUI:
             control_frame,
             text="NEW GAME",
             font=("Arial", 12, "bold"),
-            bg="#0e4b99",
-            fg="#ffffff",
-            activebackground="#1a5490",
-            activeforeground="#ffffff",
-            relief="raised",
-            bd=2,
-            padx=20,
-            pady=5,
-            command=self.new_game
+            command=self.new_game,
+            bg="#1a1a2e",
+            fg="#00ffff",
+            activebackground="#00ffff",
+            activeforeground="#1a1a2e",
+            relief="flat",
+            borderwidth=2,
+            width=12,
+            height=2
         )
-        new_game_btn.pack(side=tk.LEFT, padx=10)
+        new_game_btn.pack(side=tk.LEFT, padx=15)
         
-        # Quit button
+        # Quit button with neon styling
         quit_btn = tk.Button(
             control_frame,
             text="QUIT",
             font=("Arial", 12, "bold"),
-            bg="#4a0e27",
-            fg="#ffffff",
-            activebackground="#5a1a35",
-            activeforeground="#ffffff",
-            relief="raised",
-            bd=2,
-            padx=20,
-            pady=5,
-            command=self.root.quit
+            command=self.root.quit,
+            bg="#1a1a2e",
+            fg="#ff4444",
+            activebackground="#ff4444",
+            activeforeground="#1a1a2e",
+            relief="flat",
+            borderwidth=2,
+            width=12,
+            height=2
         )
-        quit_btn.pack(side=tk.LEFT, padx=10)
+        quit_btn.pack(side=tk.LEFT, padx=15)
     
     def on_cell_click(self, row: int, col: int):
         """Handle cell click event."""
@@ -175,24 +168,15 @@ class TicTacToeGUI:
                     self.status_label.config(text="AI is thinking...", fg="#ffaa00")
                     self.disable_board()
                     
-                    # Use threading to prevent GUI freezing during AI calculation
-                    ai_thread = threading.Thread(target=self.ai_move)
-                    ai_thread.start()
+                    # Use after() instead of threading to avoid issues
+                    self.root.after(500, self.ai_move)
     
     def ai_move(self):
-        """Handle AI move in a separate thread."""
-        # Add a small delay to show "thinking" status
-        import time
-        time.sleep(0.5)
-        
+        """Handle AI move."""
         # Get AI move
         row, col = self.ai.get_best_move(self.game)
         
-        # Make AI move on main thread
-        self.root.after(0, lambda: self.process_ai_move(row, col))
-    
-    def process_ai_move(self, row: int, col: int):
-        """Process AI move on the main thread."""
+        # Make AI move
         self.game.make_move(row, col, self.game.ai_player)
         self.update_board()
         
@@ -250,16 +234,15 @@ class TicTacToeGUI:
     def disable_board(self):
         """Disable all board buttons."""
         for row in self.buttons:
-            for btn in row:
-                btn.config(state='disabled')
+            for button in row:
+                button.config(state='disabled')
     
     def enable_board(self):
-        """Enable all empty board buttons with hover effects."""
+        """Enable all empty board buttons."""
         for i in range(3):
             for j in range(3):
                 if self.game.board[i][j] == ' ':
-                    button = self.buttons[i][j]
-                    button.config(state='normal')
+                    self.buttons[i][j].config(state='normal')
     
     def handle_game_end(self, result):
         """Handle the end of the game with enhanced visual feedback."""
@@ -293,7 +276,7 @@ class TicTacToeGUI:
     
     def new_game(self):
         """Start a new game."""
-        # Create a new game instance instead of trying to reset
+        # Create a new game instance
         self.game = TicTacToeGame()
         self.ai = MinimaxAI(self.game.ai_player, self.game.human_player)
         
